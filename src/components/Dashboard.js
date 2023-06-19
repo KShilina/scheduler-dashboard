@@ -8,6 +8,8 @@ import Panel from "./Panel";
 
 import axios from "axios";
 
+import { setInterview } from "helpers/reducers";
+
 import {
   getTotalInterviews,
   getLeastPopularTimeSlot,
@@ -67,7 +69,17 @@ class Dashboard extends Component {
         interviewers: interviewers.data,
       });
     });
-    
+
+    this.socket = new WebSocket(process.env.REACT_APP_WEBSOCKET_URL); //WebSockets are connections that stay open
+    this.socket.onmessage = (event) => {
+      const data = JSON.parse(event.data); //This event handler converts the string data to JavaScript data types
+
+      if (typeof data === "object" && data.type === "SET_INTERVIEW") {
+        this.setState((previousState) =>
+          setInterview(previousState, data.id, data.interview)
+        );
+      }
+    };
   }
 
   componentDidUpdate(previousProps, previousState) {
@@ -80,6 +92,10 @@ class Dashboard extends Component {
     this.setState((previousState) => ({
       focused: previousState.focused !== null ? null : id,
     }));
+  }
+
+  componentWillUnmount() {
+    this.socket.close(); //close WebSocket connection when unmount
   }
 
   render() {
